@@ -7,7 +7,10 @@ export const request = (config) => {
     ins.interceptors.response.use(response =>{
         return response.data
     })
-    ins.interceptors.response.use(config =>{
+    ins.interceptors.request.use(config =>{
+
+        // 给所有的项目加上token
+        config.headers.Authorization = sessionStorage.getItem("token")
         return config
     })
     return ins(config)
