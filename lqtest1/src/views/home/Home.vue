@@ -10,13 +10,16 @@
         <el-container>
             <el-aside :width="asideMenuFlag ? '64px' : '200px'">
                 <div class="menu-flex" @click = 'menuFlexClick'>| | |</div>
-                <el-menu background-color="#333744" text-color="#ffffff" unique-opened :collapse="asideMenuFlag" :collapse-transition="false">
+                <el-menu
+                 background-color="#333744" text-color="#ffffff" unique-opened :collapse="asideMenuFlag"
+                 :collapse-transition="false" router :default-active="activePath">
+
                     <el-submenu v-for ='item in asideMenu'  :key="item.id" :index="item.id + ''">
                         <template slot="title">
                             <i :class="icons[item.id]"></i>
                             <span>{{item.authName}}</span>
                         </template>
-                            <el-menu-item v-for ='citem in item.children' :key="citem.id" :index="citem.id + ''">
+                            <el-menu-item v-for ='citem in item.children' :key="citem.id" :index="'/' + citem.path">
                                 <template slot="title">
                                     <i class="el-icon-menu"></i>
                                     <span>{{citem.authName}}</span>
@@ -25,7 +28,10 @@
                     </el-submenu>
                 </el-menu>
             </el-aside>
-            <el-main>Main</el-main>
+
+            <el-main>
+                <router-view></router-view>
+            </el-main>
         </el-container>
     </el-container>
 </template>
@@ -86,6 +92,26 @@
             },
             menuFlexClick(){
                 this.asideMenuFlag = !this.asideMenuFlag
+            }
+        },
+        computed:{
+            // 设置激活默认展示项以及点击后展示项的路由的展示
+            // 包含孙子路由
+            activePath(){
+                    const childs = []
+                    this.asideMenu.forEach(item => {
+                        item.children.forEach(cItem => {
+                            childs.push("/"+cItem.path)
+                        })
+                    })
+                    const cItem = childs.find(item => {
+                        return this.$route.path.indexOf(item) >= 0
+                    })
+                    return cItem
+
+                // 不包含孙子路由
+                // return this.$route.path
+
             }
         }
     }

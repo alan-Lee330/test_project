@@ -53,8 +53,8 @@
 
                 // 收集input框的数据
                 login_form:{
-                    username:'',
-                    password:''
+                    username:'admin',
+                    password:'123456'
                 }
             }
         },
