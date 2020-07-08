@@ -5,12 +5,12 @@
         <el-card>
             <el-row :gutter='20'>
                 <el-col :span="8">
-                    <el-input>
-                        <el-button slot="append" icon="el-icon-search"></el-button>
+                    <el-input v-model="usersParams.query" placeholder="请输入内容" clearable @clear="clearSearch">
+                        <el-button slot="append" icon="el-icon-search" @click="userListSearch"></el-button>
                     </el-input>
                 </el-col>
                 <el-col :span="4">
-                    <el-button type="primary">添加用户</el-button>
+                    <el-button type="primary" @click="addUser">添加用户</el-button>
                 </el-col>
             </el-row>
 
@@ -22,7 +22,7 @@
                 <el-table-column prop="role_name" label="角色"></el-table-column>
                 <el-table-column prop="mg_state" label="状态">
                     <template slot-scope="statusInfo">
-                        <el-switch>
+                        <el-switch @change="statusChange(statusInfo.row)"
                                 v-model="statusInfo.row.mg_state"
                                 active-color="#13ce66"
                                 inactive-color="#ff4949">
@@ -32,7 +32,7 @@
                 <el-table-column prop="date" label="操作" width="200px">
                     <template slot-scope="operateInfo">
                         <el-tooltip class="item" effect="dark" content="编辑" placement="top" :enterable="false">
-                            <el-button type="primary" size="mini" icon="el-icon-edit" circle></el-button>
+                            <el-button type="primary" size="mini" icon="el-icon-edit" circle @click="editUserInfo(operateInfo.row)"></el-button>
                         </el-tooltip>
                         <el-tooltip class="item" effect="dark" content="删除" placement="top" :enterable="false">
                             <el-button type="danger"  size="mini" icon="el-icon-delete" circle></el-button>
@@ -58,30 +58,34 @@
             </el-pagination>
         </el-card>
 
+        <add-or-edit-dialog ref="addNewUser" :userInfo="userInfo"></add-or-edit-dialog>
+
     </div>
 
 </template>
 
 <script>
     import Breadcrumb from '@components/Breadcrumb'
-    import {reqUserList} from "@network/api";
+    import {reqUserList,reqChangeStatus} from "@network/api";
+    import AddOrEditDialog from "./childcom/AddOrEditDialog";
 
     export default {
         name: "Users",
         components:{
-            Breadcrumb
+            Breadcrumb,
+            AddOrEditDialog
         },
         data(){
             return{
                 // 表格数据
                 usersData: [],
                 usersParams:{
-                    query:'',
+                    query:'', //搜索关键字
                     pagenum:1,
                     pagesize:2
                 },
-                total:0
-
+                total:0,
+                userInfo:{}
             }
         },
         created() {
@@ -91,7 +95,7 @@
             // 获取用户列表
             async getUserList(){
                 const result = await reqUserList(this.usersParams)
-                console.log(result)
+                // console.log(result)
                 // 请求不成功
                 if(result.meta.status !== 200){return this.$message.error('获取用户列表失败')}
                     const {users,total} = result.data
@@ -107,6 +111,27 @@
             handleCurrentChange(page){
                 this.usersParams.pagenum = page
                 this.getUserList()
+            },
+            userListSearch(){
+                this.usersParams.pagenum = 1
+                this.getUserList()
+            },
+            clearSearch(){
+                this.getUserList()
+            },
+            async statusChange(userInfo){
+                const {id,mg_state} = userInfo
+                const result = await reqChangeStatus(id,mg_state)
+                if(result.meta.status !== 200) return this.$message.error('设置状态失败');
+                this.$message.success('设置状态成功')
+            },
+            addUser(){
+                this.userInfo = {}
+                this.$refs.addNewUser.dialogVisible = true
+            },
+            editUserInfo(userInfo){
+                this.$refs.addNewUser.dialogVisible = true
+                this.userInfo = userInfo
             },
         }
     }
