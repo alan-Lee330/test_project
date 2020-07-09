@@ -35,10 +35,10 @@
                             <el-button type="primary" size="mini" icon="el-icon-edit" circle @click="editUserInfo(operateInfo.row)"></el-button>
                         </el-tooltip>
                         <el-tooltip class="item" effect="dark" content="删除" placement="top" :enterable="false">
-                            <el-button type="danger"  size="mini" icon="el-icon-delete" circle></el-button>
+                            <el-button type="danger"  size="mini" icon="el-icon-delete" circle @click="delUserInfo(operateInfo.row.id)"></el-button>
                         </el-tooltip>
                         <el-tooltip class="item" effect="dark" content="设置" placement="top" :enterable="false">
-                            <el-button type="warning" size="mini" icon="el-icon-setting" circle></el-button>
+                            <el-button type="warning" size="mini" icon="el-icon-setting" circle @click="allotRights(operateInfo.row)"></el-button>
                         </el-tooltip>
 
 
@@ -58,7 +58,8 @@
             </el-pagination>
         </el-card>
 
-        <add-or-edit-dialog ref="addNewUser" :userInfo="userInfo"></add-or-edit-dialog>
+        <add-or-edit-dialog ref="addNewUser" :userInfo="userInfo" @refreshPage="refreshPage"></add-or-edit-dialog>
+        <allot-rights ref="allotRights" :allotUserInfo="allotUserInfo" :allotRoleList="allotRoleList" @refreshPage="refreshPage"></allot-rights>
 
     </div>
 
@@ -66,14 +67,16 @@
 
 <script>
     import Breadcrumb from '@components/Breadcrumb'
-    import {reqUserList,reqChangeStatus} from "@network/api";
+    import {reqUserList,reqChangeStatus,reqDelUserInfo,reqAllotRights} from "@network/api";
     import AddOrEditDialog from "./childcom/AddOrEditDialog";
+    import AllotRights from "./childcom/AllotRights";
 
     export default {
         name: "Users",
         components:{
             Breadcrumb,
-            AddOrEditDialog
+            AddOrEditDialog,
+            AllotRights
         },
         data(){
             return{
@@ -85,7 +88,9 @@
                     pagesize:2
                 },
                 total:0,
-                userInfo:{}
+                userInfo:{},
+                allotUserInfo:{},
+                allotRoleList:[] //角色列表信息
             }
         },
         created() {
@@ -108,31 +113,69 @@
                 this.usersParams.pagesize = size
                 this.getUserList()
             },
+
             handleCurrentChange(page){
                 this.usersParams.pagenum = page
                 this.getUserList()
             },
+
             userListSearch(){
                 this.usersParams.pagenum = 1
                 this.getUserList()
             },
+
             clearSearch(){
                 this.getUserList()
             },
+
             async statusChange(userInfo){
                 const {id,mg_state} = userInfo
                 const result = await reqChangeStatus(id,mg_state)
                 if(result.meta.status !== 200) return this.$message.error('设置状态失败');
                 this.$message.success('设置状态成功')
             },
+
             addUser(){
                 this.userInfo = {}
                 this.$refs.addNewUser.dialogVisible = true
             },
+
             editUserInfo(userInfo){
                 this.$refs.addNewUser.dialogVisible = true
                 this.userInfo = userInfo
             },
+            delUserInfo(id){
+
+                this.$confirm('确定要删除该用户信息？', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(async () => {
+                    const result = await reqDelUserInfo(id)
+                    if(result.meta.status !== 200) return this.$message.error('删除失败')
+                    this.$message.success('删除成功')
+                    this.getUserList()
+                    // this.usersParams.pagenum = 1
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });
+                });
+            },
+            async allotRights(userinfo){
+
+                this.$refs.allotRights.dialogVisible = true
+                this.allotUserInfo =userinfo
+                const result = await reqAllotRights()
+                if(result.meta.status !== 200) return this.$message.error('获取角色列表失败')
+                this.allotRoleList = result.data
+            },
+
+            //添加用户后刷新页面
+            refreshPage(){
+                this.getUserList()
+            }
         }
     }
 </script>
